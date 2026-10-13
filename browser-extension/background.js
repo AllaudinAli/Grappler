@@ -1,8 +1,11 @@
 // Grappler for Brave - background service worker.
 //
-// Grabs from the popup, the right-click menu and the keyboard shortcut all
+// Fetches from the popup, the right-click menu and the keyboard shortcut all
 // go through here: a popup dies the moment it loses focus, and Grappler can
 // take a few seconds to start, so the request must not live in the popup.
+//
+// A fetch only reads the video's details. The quality is chosen afterwards,
+// in the popup or in Grappler, once the real options are known.
 //
 // While anything is downloading this also keeps one connection to Grappler
 // open and mirrors progress on the toolbar badge. An open native-messaging
@@ -10,15 +13,15 @@
 // with the popup closed.
 
 const HOST = 'com.grappler.host';
-const DEFAULTS = { quality: -1, sendCookies: true };
+const DEFAULTS = { sendCookies: true };
 const ACTIVE = new Set(['probing', 'queued', 'downloading', 'processing']);
 const COLORS = { accent: '#2F81F7', success: '#3FB950', danger: '#F85149' };
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({ id: 'page', title: 'Grab this page with Grappler', contexts: ['page', 'frame'] });
-    chrome.contextMenus.create({ id: 'link', title: 'Grab link with Grappler', contexts: ['link'] });
-    chrome.contextMenus.create({ id: 'video', title: 'Grab this video with Grappler', contexts: ['video', 'audio'] });
+    chrome.contextMenus.create({ id: 'page', title: 'Fetch this page with Grappler', contexts: ['page', 'frame'] });
+    chrome.contextMenus.create({ id: 'link', title: 'Fetch link with Grappler', contexts: ['link'] });
+    chrome.contextMenus.create({ id: 'video', title: 'Fetch this video with Grappler', contexts: ['video', 'audio'] });
   });
 });
 
@@ -26,17 +29,30 @@ chrome.contextMenus.onClicked.addListener((info) => {
   // A <video> element's src is usually a blob: or a single stream - the
   // page itself is what yt-dlp knows how to read.
   const url = info.menuItemId === 'link' ? info.linkUrl : (info.frameUrl || info.pageUrl);
-  grab(url, {});
+  fetchAndShow(url);
 });
 
 chrome.commands.onCommand.addListener((command, tab) => {
-  if (command === 'grab-current-tab' && tab) { grab(tab.url, {}); }
+  if (command === 'grab-current-tab' && tab) { fetchAndShow(tab.url); }
 });
+
+// Without the popup there is nowhere to pick the quality, so open it once
+// the fetch is on its way. Brave allows that from a menu click or shortcut;
+// if it ever refuses, the badge says something is waiting instead.
+async function fetchAndShow(url) {
+  const reply = await fetchVideo(url, {});
+  if (!reply.ok) { return; }
+  try {
+    await chrome.action.openPopup();
+  } catch (e) {
+    setBadge('1', COLORS.accent, 'Grappler: ready - click to choose a quality');
+  }
+}
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   switch (msg.type) {
-    case 'grab':
-      grab(msg.url, msg).then(sendResponse);
+    case 'fetch':
+      fetchVideo(msg.url, msg).then(sendResponse);
       return true;
     case 'show':
       callHost({ type: 'show' }).then(sendResponse);
@@ -49,17 +65,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-// ---------------------------------------------------------------- grab
-async function grab(url, overrides) {
+// ---------------------------------------------------------------- fetch
+async function fetchVideo(url, overrides) {
   let reply;
   if (!/^https?:\/\//i.test(url || '')) {
-    reply = { ok: false, error: 'Open a video page first - this tab has nothing to grab.' };
+    reply = { ok: false, error: 'Open a video page first - this tab has nothing to fetch.' };
   } else {
     const prefs = await chrome.storage.local.get(DEFAULTS);
-    const quality = overrides.quality !== undefined ? overrides.quality : prefs.quality;
     const sendCookies = overrides.sendCookies !== undefined ? overrides.sendCookies : prefs.sendCookies;
 
-    const message = { type: 'grab', url, quality };
+    const message = { type: 'fetch', url };
     if (sendCookies) {
       const cookies = await cookiesFor(url);
       if (cookies) { message.cookies = cookies; }
@@ -67,11 +82,7 @@ async function grab(url, overrides) {
     reply = await callHost(message);
   }
 
-  if (reply.ok) {
-    watch();
-  } else {
-    flashBadge('!', COLORS.danger, 'Grappler: ' + reply.error);
-  }
+  if (!reply.ok) { flashBadge('!', COLORS.danger, 'Grappler: ' + reply.error); }
   return reply;
 }
 
@@ -113,10 +124,10 @@ function callHost(message) {
 
 function explain(text) {
   if (/not found|forbidden/i.test(text || '')) {
-    return 'Brave cannot find Grappler yet. Run Install-Brave-Extension.bat in the Grappler folder, then restart Brave.';
+    return 'Brave cannot find Grappler yet. In Grappler, open Settings and click Connect under Brave extension, then restart Brave.';
   }
   if (/exited/i.test(text || '')) {
-    return 'Grappler.exe could not be started. Has the Grappler folder moved? Run Install-Brave-Extension.bat again.';
+    return 'Grappler.exe could not be started. Open Grappler once from its folder - it reconnects the extension by itself.';
   }
   return text;
 }
@@ -167,7 +178,7 @@ function watch() {
 
     stop();
     const ended = items.filter((i) => watched.has(i.id));
-    if (!ended.length) { setBadge('', COLORS.accent, 'Grab with Grappler'); return; }
+    if (!ended.length) { setBadge('', COLORS.accent, 'Fetch with Grappler'); return; }
     const failed = ended.some((i) => i.state === 'failed');
     flashBadge(failed ? '!' : '✓', failed ? COLORS.danger : COLORS.success,
       failed ? 'Grappler: a download failed' : 'Grappler: downloads finished');
@@ -187,6 +198,6 @@ function setBadge(text, color, title) {
 function flashBadge(text, color, title) {
   setBadge(text, color, title);
   setTimeout(() => {
-    if (!watchPort) { setBadge('', COLORS.accent, 'Grab with Grappler'); }
+    if (!watchPort) { setBadge('', COLORS.accent, 'Fetch with Grappler'); }
   }, 6000);
 }

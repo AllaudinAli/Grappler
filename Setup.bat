@@ -7,13 +7,13 @@ rem       (official builds, about 400 MB - nothing is installed
 rem       system-wide and PATH is never touched)
 rem    2. builds Grappler.exe from app\src
 rem
-rem  Safe to run again at any time - it repairs or refreshes
-rem  everything.
+rem  Safe to run again at any time - tools already there are
+rem  skipped. "Setup.bat -Force" downloads them all again.
 rem ---------------------------------------------------------
 title Grappler setup
 cd /d "%~dp0"
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\setup.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\setup.ps1" %*
 if errorlevel 1 goto failed
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0app\build.ps1"
@@ -22,8 +22,8 @@ if errorlevel 1 goto failed
 echo.
 echo  All set. Double-click Grappler.exe to start.
 echo.
-echo  Using Brave? Run Install-Brave-Extension.bat for the
-echo  browser button - see README.md.
+echo  Using Brave? Connect the extension from Grappler's
+echo  Settings - see README.md.
 echo.
 pause
 exit /b 0

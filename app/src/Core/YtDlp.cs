@@ -6,31 +6,6 @@ using System.Text;
 
 namespace Grappler.Core
 {
-    public sealed class ProbeResult
-    {
-        public string Title { get; set; }
-        public string Uploader { get; set; }
-        public string Duration { get; set; }
-        public string Resolution { get; set; }
-        public string ThumbnailUrl { get; set; }
-
-        /// <summary>"Blender Foundation   ·   14:48   ·   1920x1080"</summary>
-        public string MetaLine()
-        {
-            List<string> parts = new List<string>();
-            if (!Empty(Uploader)) { parts.Add(Uploader); }
-            if (!Empty(Duration)) { parts.Add(Duration); }
-            if (!Empty(Resolution)) { parts.Add(Resolution); }
-            return string.Join("   ·   ", parts.ToArray());
-        }
-
-        // yt-dlp prints the literal "NA" for fields a site does not provide.
-        private static bool Empty(string s)
-        {
-            return string.IsNullOrEmpty(s) || s == "NA" || s == "none";
-        }
-    }
-
     public static class YtDlp
     {
         /// <summary>
@@ -220,57 +195,43 @@ namespace Grappler.Core
             return lines.ToArray();
         }
 
+        /// <summary>"Engine 2026.08.19" for the status bar.</summary>
         public static string Version()
         {
-            if (!File.Exists(Paths.YtDlp)) { return "yt-dlp missing"; }
+            if (!File.Exists(Paths.YtDlp)) { return "Engine missing - run Setup.bat"; }
             int exit;
             string[] lines = Capture(new string[] { "--version" }, 8000, out exit);
             if (lines.Length > 0 && lines[0].Trim().Length > 0)
             {
-                return "yt-dlp " + lines[0].Trim();
+                return "Engine " + lines[0].Trim();
             }
-            return "yt-dlp";
+            return "Engine";
         }
 
         /// <summary>
-        /// One process, five --print lines. Cheaper than asking for the full
-        /// JSON dump and avoids needing a JSON parser at all.
+        /// Everything about a link in one call: details for the row plus the
+        /// full format list the quality choices are built from. Playlists are
+        /// read flat - titles only - so a 500-video channel answers in
+        /// seconds instead of fetching every video first. Null on failure.
         /// </summary>
-        public static ProbeResult Probe(string url, AppSettings settings, string cookieFile)
+        public static VideoInfo Probe(string url, AppSettings settings, string cookieFile,
+                                      bool playlist, string playlistItems)
         {
             List<string> args = new List<string>();
             args.Add("--ignore-config");
             args.Add("--no-warnings");
-            args.Add("--no-playlist");
-            args.Add("--playlist-items"); args.Add("1");
-            args.Add("--print"); args.Add("%(title)s");
-            args.Add("--print"); args.Add("%(uploader,channel,uploader_id,extractor)s");
-            args.Add("--print"); args.Add("%(duration_string,duration)s");
-            args.Add("--print"); args.Add("%(resolution)s");
-            args.Add("--print"); args.Add("%(thumbnail)s");
+            args.Add("-J");
+            args.Add("--flat-playlist");
+            args.Add(playlist ? "--yes-playlist" : "--no-playlist");
             AddJsRuntime(args);
             AddImpersonation(args);
             AddCookies(args, settings, cookieFile);
             args.Add(url);
 
             int exit;
-            string[] lines = Capture(args, 45000, out exit);
+            string[] lines = Capture(args, 90000, out exit);
             if (exit != 0 || lines.Length == 0) { return null; }
-
-            ProbeResult r = new ProbeResult();
-            r.Title = Field(lines, 0);
-            r.Uploader = Field(lines, 1);
-            // The last fallback in the template is the extractor name, which
-            // for unsupported sites is "generic" (or "generic+kvs_fix" with
-            // the plugin) - not something to show anyone.
-            if (r.Uploader != null && r.Uploader.StartsWith("generic", StringComparison.OrdinalIgnoreCase))
-            {
-                r.Uploader = null;
-            }
-            r.Duration = Field(lines, 2);
-            r.Resolution = Field(lines, 3);
-            r.ThumbnailUrl = Field(lines, 4);
-            return r;
+            return VideoInfo.Parse(string.Join("\n", lines), settings, playlistItems);
         }
 
         /// <summary>The -F table, for the format picker.</summary>
@@ -289,13 +250,6 @@ namespace Grappler.Core
 
             int exit;
             return Capture(args, 60000, out exit);
-        }
-
-        private static string Field(string[] lines, int index)
-        {
-            if (index >= lines.Length) { return ""; }
-            string value = lines[index].Trim();
-            return value == "NA" ? "" : value;
         }
     }
 

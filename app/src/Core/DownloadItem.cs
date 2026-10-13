@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Media;
 
@@ -6,7 +7,8 @@ namespace Grappler.Core
 {
     public enum DownloadState
     {
-        Probing,
+        Probing,      // fetching the video's details
+        Ready,        // details in - waiting for a quality to be chosen
         Queued,
         Downloading,
         Processing,   // merging / converting / tagging - percent is meaningless here
@@ -43,7 +45,7 @@ namespace Grappler.Core
 
             _title = url;
             _state = DownloadState.Probing;
-            _statusText = "Reading video info";
+            _statusText = "Fetching details";
 
             _stagedTitle = url;
             _stagedState = DownloadState.Probing;
@@ -79,6 +81,8 @@ namespace Grappler.Core
         private string _stagedSpeed;
         private string _stagedEta;
         private ImageSource _stagedThumbnail;
+        private List<FormatChoice> _stagedChoices;
+        private int _stagedDefault;
 
         // ---------- bound properties (UI thread only) -------------------
         private string _title;
@@ -103,6 +107,13 @@ namespace Grappler.Core
         private string _etaText;
         public string EtaText { get { return _etaText; } set { Set(ref _etaText, value); } }
 
+        // ---------- quality choice (Ready state) ------------------------
+        private List<FormatChoice> _choices;
+        public List<FormatChoice> Choices { get { return _choices; } set { Set(ref _choices, value); } }
+
+        private FormatChoice _selectedChoice;
+        public FormatChoice SelectedChoice { get { return _selectedChoice; } set { Set(ref _selectedChoice, value); } }
+
         private double _percent;
         public double Percent { get { return _percent; } set { Set(ref _percent, value); } }
 
@@ -119,6 +130,7 @@ namespace Grappler.Core
                 {
                     Raise("IsIndeterminate");
                     Raise("IsActive");
+                    Raise("IsReady");
                     Raise("SortRank");
                 }
             }
@@ -128,6 +140,20 @@ namespace Grappler.Core
         public bool IsIndeterminate
         {
             get { return _state == DownloadState.Processing || _state == DownloadState.Probing; }
+        }
+
+        /// <summary>Details are in and a quality is waiting to be picked.</summary>
+        public bool IsReady { get { return _state == DownloadState.Ready; } }
+
+        /// <summary>Finished one way or another - safe to clear from the list.</summary>
+        public bool IsFinished
+        {
+            get
+            {
+                return _state == DownloadState.Done
+                    || _state == DownloadState.Failed
+                    || _state == DownloadState.Cancelled;
+            }
         }
 
         public bool IsActive
@@ -152,10 +178,11 @@ namespace Grappler.Core
                     case DownloadState.Downloading: return 0;
                     case DownloadState.Processing:  return 1;
                     case DownloadState.Probing:     return 2;
-                    case DownloadState.Queued:      return 3;
-                    case DownloadState.Failed:      return 4;
-                    case DownloadState.Cancelled:   return 5;
-                    default:                        return 6;
+                    case DownloadState.Ready:       return 3;
+                    case DownloadState.Queued:      return 4;
+                    case DownloadState.Failed:      return 5;
+                    case DownloadState.Cancelled:   return 6;
+                    default:                        return 7;
                 }
             }
         }
@@ -205,6 +232,19 @@ namespace Grappler.Core
             {
                 if (_stagedTitle == title) { return; }
                 _stagedTitle = title;
+                _dirty = true;
+            }
+        }
+
+        /// <summary>The details are in: offer these choices, with one preselected.</summary>
+        public void ReportReady(List<FormatChoice> choices, int defaultIndex)
+        {
+            lock (_gate)
+            {
+                _stagedState = DownloadState.Ready;
+                _stagedStatus = "Choose a quality";
+                _stagedChoices = choices;
+                _stagedDefault = defaultIndex;
                 _dirty = true;
             }
         }
@@ -265,6 +305,8 @@ namespace Grappler.Core
             double percent;
             string status, title, meta, size, error, speed, eta;
             ImageSource thumbnail;
+            List<FormatChoice> choices;
+            int defaultChoice;
 
             lock (_gate)
             {
@@ -280,6 +322,9 @@ namespace Grappler.Core
                 speed = _stagedSpeed;
                 eta = _stagedEta;
                 thumbnail = _stagedThumbnail;
+                choices = _stagedChoices;
+                defaultChoice = _stagedDefault;
+                _stagedChoices = null;   // applied once; after that the user's pick stands
             }
 
             State = state;
@@ -292,6 +337,11 @@ namespace Grappler.Core
             SpeedText = speed;
             EtaText = eta;
             if (thumbnail != null) { Thumbnail = thumbnail; }
+            if (choices != null && choices.Count > 0)
+            {
+                Choices = choices;
+                SelectedChoice = choices[Math.Min(Math.Max(defaultChoice, 0), choices.Count - 1)];
+            }
             return true;
         }
     }

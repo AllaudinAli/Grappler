@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Grappler.Core
 {
     /// <summary>
@@ -25,10 +27,10 @@ namespace Grappler.Core
 
         public override string ToString() { return Label; }
 
-        private const string RankBest = "res,fps,ext:mp4:m4a";
+        public const string RankBest = "res,fps,ext:mp4:m4a";
 
-        // The Brave extension refers to these by position (see
-        // browser-extension/popup.html) - keep the order, or update it there too.
+        // VideoInfo uses these by position (0-3 video, 4 MP3, 5 original
+        // audio, 6 subtitles) - keep the order.
         public static readonly QualityPreset[] All = new QualityPreset[]
         {
             new QualityPreset("Best quality",
@@ -63,18 +65,31 @@ namespace Grappler.Core
         };
 
         /// <summary>
-        /// Whole playlist or channel. The archive file is what makes
-        /// re-running a channel later pick up only the new uploads.
+        /// Whole playlist or channel, at the quality of the given preset.
+        /// The archive file is what makes re-running a channel later pick
+        /// up only the new uploads.
         /// </summary>
-        public static string[] PlaylistArgs(string archivePath)
+        public static string[] PlaylistArgs(string archivePath, string[] presetArgs, string items)
         {
-            return new string[]
+            List<string> args = new List<string>();
+            foreach (string a in presetArgs)
             {
-                "-f", "bv*+ba/b", "-S", RankBest,
-                "--yes-playlist",
-                "-o", "%(playlist_title,playlist,uploader,extractor)s/%(playlist_index)02d - %(title)s [%(id)s].%(ext)s",
-                "--download-archive", archivePath
-            };
+                if (a != "--no-playlist") { args.Add(a); }
+            }
+            args.Add("--yes-playlist");
+            args.Add("-o");
+            args.Add("%(playlist_title,playlist,uploader,extractor)s/%(playlist_index)02d - %(title)s [%(id)s].%(ext)s");
+            args.Add("--download-archive");
+            args.Add(archivePath);
+            if (!string.IsNullOrEmpty(items))
+            {
+                // Passed through untouched - the engine already understands
+                // "1-10", "3,7,12" and "5:", and reports a bad range better
+                // than a guess here would.
+                args.Add("--playlist-items");
+                args.Add(items);
+            }
+            return args.ToArray();
         }
     }
 }

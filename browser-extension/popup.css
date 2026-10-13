@@ -104,6 +104,8 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
 }
 .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
 .icon-btn.danger:hover { color: var(--danger); }
+.icon-btn.accent { color: var(--accent); }
+.icon-btn.accent:hover { background: var(--accent-soft); color: var(--accent); }
 
 /* ---------- grab card ---------- */
 .grab-card {
@@ -149,6 +151,13 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
   cursor: pointer;
 }
 .select select:hover { border-color: var(--text-3); }
+/* The compact picker inside a download row. */
+.select.small { display: block; margin-top: 4px; }
+.select.small select { height: 26px; padding: 0 26px 0 8px; font-size: 12px; border-radius: 6px; }
+.select.small .chevron { top: 5px; right: 7px; }
+
+.card-bar { margin-top: 10px; }
+
 .select .chevron {
   position: absolute; right: 9px; top: 9px;
   color: var(--text-2);

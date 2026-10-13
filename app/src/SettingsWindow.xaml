@@ -26,7 +26,7 @@
               Content="Browse" Margin="8,0,0,0" Click="OnBrowseClick" />
     </Grid>
     <TextBlock Style="{StaticResource CaptionText}" Margin="0,7,0,0" TextWrapping="Wrap"
-               Text="Shared with Download.bat - changing it here changes it there too. The folder is created if it does not exist." />
+               Text="The folder is created if it does not exist." />
 
     <!-- parallel -->
     <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,22,0,0"
@@ -36,13 +36,21 @@
     <TextBlock Style="{StaticResource CaptionText}" Margin="0,7,0,0" TextWrapping="Wrap"
                Text="More is not always faster - your connection is shared between them, and some sites throttle you above three or four." />
 
+    <!-- preferred quality -->
+    <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,22,0,0"
+               Text="Quality picked for you" />
+    <ComboBox x:Name="QualityBox" Style="{StaticResource Select}"
+              Width="180" HorizontalAlignment="Left" Margin="0,9,0,0" />
+    <TextBlock Style="{StaticResource CaptionText}" Margin="0,7,0,0" TextWrapping="Wrap"
+               Text="Preselected once a video's details are in - the closest match it offers. You can still change it on each video before downloading." />
+
     <!-- cookies -->
     <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,22,0,0"
                Text="Sign-in cookies" />
     <ComboBox x:Name="CookieBox" Style="{StaticResource Select}"
               Width="180" HorizontalAlignment="Left" Margin="0,9,0,0" />
     <TextBlock Style="{StaticResource CaptionText}" Margin="0,7,0,0" TextWrapping="Wrap"
-               Text="Borrows cookies from your browser for age-restricted, private or members-only videos. Close the browser first - Chrome locks its cookie database while running." />
+               Text="Borrows cookies from your browser for age-restricted, private or members-only videos. Works with Firefox; Chrome, Edge and Brave no longer allow it - use the Brave extension's sign-in instead." />
 
     <!-- closing -->
     <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,22,0,0"
@@ -52,12 +60,24 @@
     <TextBlock Style="{StaticResource CaptionText}" Margin="0,7,0,0" TextWrapping="Wrap"
                Text="In the tray, Grappler keeps downloading and the Brave extension keeps working. Click the tray icon to bring the window back." />
 
+    <!-- Brave extension -->
+    <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,22,0,0"
+               Text="Brave extension" />
+    <StackPanel Orientation="Horizontal" Margin="0,9,0,0">
+      <Button x:Name="BraveButton" Style="{StaticResource GhostButton}"
+              Content="Connect" Click="OnBraveClick" />
+      <TextBlock x:Name="BraveStatus" Style="{StaticResource CaptionText}"
+                 VerticalAlignment="Center" Margin="12,0,0,0" />
+    </StackPanel>
+    <TextBlock x:Name="BraveHint" Style="{StaticResource CaptionText}" Margin="0,7,0,0" TextWrapping="Wrap"
+               Text="Lets the Grappler extension in Brave (or Chrome) send videos here. One-time, no admin rights needed." />
+
     <!-- maintenance -->
     <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="0,22,0,0" />
     <Grid Margin="0,18,0,0">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
         <Button x:Name="UpdateButton" Style="{StaticResource GhostButton}"
-                Content="Update yt-dlp" Click="OnUpdateClick" />
+                Content="Update download engine" Click="OnUpdateClick" />
         <TextBlock x:Name="UpdateStatus" Style="{StaticResource CaptionText}"
                    VerticalAlignment="Center" Margin="12,0,0,0" TextTrimming="CharacterEllipsis" />
       </StackPanel>
@@ -66,7 +86,7 @@
               Click="OnOpenConfigClick" />
     </Grid>
     <TextBlock Style="{StaticResource CaptionText}" Margin="0,9,0,0" TextWrapping="Wrap"
-               Text="Sites change how they serve video constantly. An &quot;unable to extract&quot; error is almost always a stale copy of yt-dlp." />
+               Text="Sites change how they serve video all the time. If downloads from a site start failing, update the engine first - fixes ship every few days." />
 
     <!-- footer -->
     <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="0,20,0,0" />

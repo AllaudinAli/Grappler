@@ -18,12 +18,13 @@
   <!-- Shown instead of everything else until Brave can reach Grappler. -->
   <section id="setup" class="setup" hidden>
     <h2>One step left</h2>
-    <p>Brave can't reach Grappler yet. In the Grappler folder, double-click
-      <b>Install-Brave-Extension.bat</b>, then restart Brave.</p>
+    <p>Brave can't reach Grappler yet. Open Grappler, go to
+      <b>Settings → Brave extension</b> and click <b>Connect</b>, then restart Brave.</p>
     <p id="setupDetail" class="setup-detail"></p>
   </section>
 
   <main id="main">
+    <!-- The page you're on: fetch its details, then choose and download. -->
     <section class="grab-card">
       <div class="page">
         <img id="favicon" class="favicon" alt="" width="16" height="16">
@@ -33,26 +34,17 @@
         </div>
       </div>
 
+      <div class="bar card-bar indeterminate" id="cardBar" hidden><span></span></div>
+
       <div class="controls">
-        <label class="select">
+        <label class="select" id="choiceWrap" hidden>
           <span class="visually-hidden">Quality</span>
-          <!-- Values are positions in QualityPreset.All (app\src\Core\QualityPreset.cs). -->
-          <select id="quality">
-            <option value="-1">App default</option>
-            <option value="0">Best quality</option>
-            <option value="1">1080p</option>
-            <option value="2">720p</option>
-            <option value="3">480p</option>
-            <option value="4">Audio · MP3</option>
-            <option value="5">Audio · original</option>
-            <option value="6">Subtitles only</option>
-            <option value="7">Choose format…</option>
-          </select>
+          <select id="choice"></select>
           <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
         </label>
-        <button id="grab" class="primary" disabled>
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg>
-          <span id="grabLabel">Grab</span>
+        <button id="action" class="primary" disabled>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path id="actionIcon" d="M7 12.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11zM14.5 14.5l-3.6-3.6"/></svg>
+          <span id="actionLabel">Fetch video</span>
         </button>
       </div>
 
@@ -77,7 +69,7 @@
       <div id="empty" class="empty">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>
         <p id="emptyTitle" class="empty-title">No downloads yet</p>
-        <p id="emptyHint" class="empty-hint">Open a video and press Grab.</p>
+        <p id="emptyHint" class="empty-hint">Open a video and press Fetch video.</p>
       </div>
     </section>
 
@@ -86,7 +78,7 @@
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5a1 1 0 0 1 1-1h3l1.5 1.5H13a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/></svg>
         Downloads folder
       </button>
-      <span class="shortcut" title="Grab the current tab from anywhere">Alt+Shift+G</span>
+      <span class="shortcut" title="Fetch the current tab from anywhere">Alt+Shift+G</span>
     </footer>
   </main>
 

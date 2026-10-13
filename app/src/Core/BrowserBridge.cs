@@ -43,7 +43,7 @@ namespace Grappler.Core
     ///
     ///   extension  --stdin-->  Grappler.exe (host)  --pipe-->  Grappler (tray)
     ///
-    /// A grab starts Grappler first if needed, hidden in the tray. Status
+    /// A fetch starts Grappler first if needed, hidden in the tray. Status
     /// and row actions never start it - an empty list is the right answer
     /// when nothing is running.
     ///
@@ -105,9 +105,9 @@ namespace Grappler.Core
             switch (type)
             {
                 case "ping":
-                    return Reply(Paths.IsInstalled ? null : "yt-dlp.exe is missing from Grappler's bin folder.");
+                    return Reply(Paths.IsInstalled ? null : "Grappler's download engine is missing. Run Setup.bat in the Grappler folder.");
 
-                case "grab":
+                case "fetch":
                     return Forward(message, true) ?? Reply("Grappler did not start in time.");
 
                 case "show":

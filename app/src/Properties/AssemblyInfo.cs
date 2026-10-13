@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 
 [assembly: AssemblyTitle("Grappler")]
-[assembly: AssemblyDescription("Desktop downloader built on yt-dlp")]
+[assembly: AssemblyDescription("Grappler - video downloader")]
 [assembly: AssemblyProduct("Grappler")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 AllaudinAIi - MIT License")]

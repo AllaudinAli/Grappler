@@ -1,20 +1,25 @@
 # Grappler
 
-A Windows desktop app for [yt-dlp](https://github.com/yt-dlp/yt-dlp): paste a
-link, pick a quality, get a file. It comes with a Brave extension that grabs
-the video you're watching in one click, with live progress in the toolbar.
+A Windows desktop app for downloading online video: paste a link, see what
+the video offers, pick a quality, download. It comes with a Brave extension
+that does the same for the page you're watching, with live progress in the
+toolbar.
 
-- **Paste and go.** Title, channel, length and thumbnail show up before the
-  download starts, so you know you pasted the right link.
-- **Several at once.** Paste many links, drop a `.txt` file of links, or grab
-  a whole playlist or channel. Three download in parallel by default.
-- **Any quality.** Best, 1080p, 720p, 480p, MP3, original audio, subtitles
-  only, or pick an exact format from the full list.
+- **Fetch, then choose.** Grappler first reads the video's title, channel,
+  length and thumbnail, and the qualities it **really** offers, with
+  estimated sizes. You pick one; nothing downloads until you press
+  **Download**.
+- **Several at once.** Paste many links, drop a `.txt` file of links, or
+  fetch a whole playlist or channel. **Download all** starts every fetched
+  video at the quality chosen on its row. Three download in parallel by
+  default.
+- **Any format.** Each resolution the video has, audio as MP3 or in its
+  original format, subtitles, or an exact stream from the full list.
 - **Big files are fine.** Resumes after dropped connections, retries failed
   chunks, and has no size or length limit.
-- **Brave extension.** A toolbar button, a right-click menu and `Alt+Shift+G`
-  send the page to Grappler. Your downloads, with progress, show in the
-  popup, and sign-in works for private and members-only videos.
+- **Brave extension.** Fetch the page from the toolbar, the right-click menu
+  or `Alt+Shift+G`, choose a quality in the popup, and follow the progress
+  there. Sign-in works for private and members-only videos.
 - **Runs in the tray.** Downloads carry on with the window closed, with a
   notification when each one finishes.
 - **Self-contained.** Everything lives in one folder: no installer, no admin
@@ -23,8 +28,8 @@ the video you're watching in one click, with live progress in the toolbar.
 ## Requirements
 
 - Windows 10 or 11 (64-bit). The .NET Framework it uses is part of Windows.
-- About 400 MB of disk space for yt-dlp, ffmpeg and deno, which setup
-  downloads from their official releases.
+- About 400 MB of disk space for the download tools, which setup fetches from
+  their official releases.
 - Optional: [Brave](https://brave.com/) for the browser extension. Chrome
   works too.
 
@@ -33,7 +38,7 @@ the video you're watching in one click, with live progress in the toolbar.
 1. **Get the code.** Clone it:
 
    ```powershell
-   git clone https://github.com/AllaudinAIi/Grappler.git
+   git clone https://github.com/AllaudinAli/Grappler.git
    ```
 
    or use **Code → Download ZIP** on GitHub and unzip it anywhere.
@@ -41,7 +46,8 @@ the video you're watching in one click, with live progress in the toolbar.
 2. **Double-click `Setup.bat`.** It downloads the tools into `bin\` and
    builds `Grappler.exe`. It takes a minute or two, mostly for ffmpeg.
 
-3. **Double-click `Grappler.exe`.** Paste a link and press Enter.
+3. **Double-click `Grappler.exe`.** Paste a link, press **Fetch**, choose a
+   quality, and press **Download**.
 
 Videos are saved to the `downloads` folder. You can change that in Settings.
 
@@ -49,29 +55,28 @@ Videos are saved to the `downloads` folder. You can change that in Settings.
 
 ```powershell
 git pull
-.\Build.bat
+.\Setup.bat
 ```
 
-If downloads from a site start failing, run `Update.bat` (or Settings →
-**Update yt-dlp**) first. Sites change all the time and yt-dlp ships fixes
-every few days.
+Setup skips the tools you already have, so this is quick. If downloads from
+a site start failing, open Settings → **Update download engine** first.
+Sites change all the time and engine fixes ship every few days.
 
 ## The Brave extension
 
 **One-time setup:**
 
-1. Double-click `Install-Brave-Extension.bat`. It tells Brave where Grappler
-   is: one registry entry under your user account, no admin rights needed.
+1. In Grappler, open **Settings → Brave extension** and click **Connect**.
+   This writes one registry entry under your user account (no admin rights
+   needed) and copies the extension's folder path to your clipboard.
 2. In Brave, open `brave://extensions`, turn on **Developer mode**, click
-   **Load unpacked** and choose the `browser-extension` folder. Its path is
-   on your clipboard after step 1.
+   **Load unpacked** and choose the `browser-extension` folder.
 3. Pin the Grappler icon to the toolbar.
 
-**Then, on any video page:**
-
-- click the toolbar button, choose a quality, and press **Grab**
-- or right-click the page, a link or a video → **Grab with Grappler**
-- or press `Alt+Shift+G`
+**Then, on any video page:** click the toolbar button and press **Fetch
+video**. When the details are in, choose a quality and press **Download**.
+The right-click menu (**Fetch with Grappler**) and `Alt+Shift+G` do the same
+and open the popup for the quality choice.
 
 If Grappler isn't running, it starts hidden in the system tray, with no
 window popping up. The popup lists your downloads with progress, speed and
@@ -84,22 +89,27 @@ work, and so do sites with bot checks. The cookies stay on your PC: they go
 over a local connection, are used for that one download, and are deleted when
 you clear the row or close Grappler.
 
-If you move the Grappler folder, run `Install-Brave-Extension.bat` again. To
-remove the extension, run `Install-Brave-Extension.bat -Uninstall` and remove
-it in `brave://extensions`.
+Moving the Grappler folder is fine: Grappler updates the connection the next
+time it starts. To remove the extension, click **Disconnect** in Settings and
+remove it in `brave://extensions`.
 
 ## Using the app
 
-**Quality** is the dropdown next to the link box:
+**Fetch a link.** Paste one or more links and press **Fetch** (or Enter).
+Each row shows the video's details, then a quality list built from what that
+video actually has:
 
-| Option | What you get |
+| Choice | What you get |
 |---|---|
-| Best quality | The default |
-| 1080p / 720p / 480p or lower | Caps the resolution |
+| 4K / 1080p / 720p ... | Each resolution the video offers, highest first, with frame rate and estimated size |
 | Audio only - MP3 | Converted, highest quality |
-| Audio only - best | Whatever the site serves, untouched |
-| Subtitles only | No video |
-| Choose format... | Lists every format the video offers |
+| Audio only - original | The site's own audio, untouched |
+| Subtitles only | Shown when the video has subtitles |
+| More formats... | The full list of streams, pick one exactly |
+
+The list starts on your preferred quality (set in Settings), or the closest
+one the video has. Press **Download** on a row, or **Download all** for
+every fetched row.
 
 **Whole playlist or channel** is the checkbox. Leave the items box empty for
 everything, or narrow it down with `1-10`, `3,7,12` or `5:`. Grappler keeps a
@@ -116,9 +126,10 @@ later in Settings. Only one Grappler runs at a time: opening it again brings
 the running one back. To quit from the tray, right-click the icon → **Quit**.
 
 **Settings** (the gear button) covers the download folder, how many downloads
-run at once, what the close button does, and **Update yt-dlp**. Everything
-else, such as file naming, retries and what gets embedded in each file, is
-one commented option per line in `config\yt-dlp.conf`.
+run at once, your preferred quality, what the close button does, the Brave
+extension, and **Update download engine**. Everything else, such as file
+naming, retries and what gets embedded in each file, is one commented option
+per line in `config\yt-dlp.conf`.
 
 ### Good to know
 
@@ -130,61 +141,57 @@ one commented option per line in `config\yt-dlp.conf`.
   is 8.
 - **Partial files** wait in `downloads\.incomplete\`, so the main folder only
   ever shows finished videos.
-- **Prefer a console?** `Download.bat` is a terminal version that shares the
-  same tools and settings.
 
 ## Troubleshooting
 
 | Symptom | What to do |
 |---|---|
-| `Unable to extract ...` | Run `Update.bat`; this is almost always an outdated yt-dlp |
+| `Unable to extract ...` | Settings → **Update download engine**: this is almost always an outdated engine |
 | `Private video` / `Video unavailable` | Nothing to fix: the video isn't public |
-| `Sign in to confirm you're not a bot` | Grab it from Brave with **Use my sign-in** turned on |
-| `Requested format is not available` | Use **Choose format...** to see what exists |
+| `Sign in to confirm you're not a bot` | Fetch it from Brave with **Use my sign-in** turned on |
 | `Failed to decrypt with DPAPI` | Set Settings → Sign-in cookies to *None* and use the Brave extension's sign-in instead. Chrome and Brave no longer let other programs read their cookies |
-| Stuck at 99%, then fails | The ffmpeg merge failed: run `Setup.bat` again |
-| `yt-dlp.exe is missing` | Run `Setup.bat` |
+| Stuck at 99%, then fails | The merge failed: run `Setup.bat -Force` to download fresh tools |
+| "Download engine is missing" | Run `Setup.bat` |
+| The extension says it can't reach Grappler | Settings → Brave extension → **Connect**, then restart Brave |
 
-**Patches to yt-dlp** live in `bin\yt-dlp-plugins\`. yt-dlp loads them
-automatically, and they survive yt-dlp updates. `kvs-fix` handles video sites
-on newer KVS players, which otherwise fail with `Unable to extract
-flashvars`. `config\yt-dlp.conf` also makes yt-dlp pose as Chrome on sites it
-has no dedicated support for, which gets past most bot checks.
+**Patches to the engine** live in `bin\yt-dlp-plugins\`. They load
+automatically and survive engine updates. `kvs-fix` handles video sites on
+newer KVS players, which otherwise fail with `Unable to extract flashvars`.
+`config\yt-dlp.conf` also makes the engine pose as Chrome on sites it has no
+dedicated support for, which gets past most bot checks.
 
 ## Project layout
 
 ```
 Grappler\
   Setup.bat                    first-time setup: tools + build
-  Grappler.exe                 the app (created by Setup.bat / Build.bat)
-  Build.bat                    rebuilds the app from source
-  Update.bat                   updates yt-dlp
-  Download.bat                 terminal version
-  Install-Brave-Extension.bat  connects the Brave extension
+  Grappler.exe                 the app (created by Setup.bat)
   app\
-    build.ps1                  MSBuild wrapper
+    build.ps1                  MSBuild wrapper, also makes the icons
     make-icon.ps1              makes every icon from the logo in assets\
     assets\                    logo-48.png, logo-96.png
     src\                       the WPF app (C#)
       Theme.xaml               the design system
       MainWindow, SettingsWindow, FormatWindow, CloseWindow
-      Core\                    settings, queue engine, yt-dlp plumbing,
-                               tray icon, BrowserBridge (the extension link)
+      Core\                    settings, queue engine, engine plumbing,
+                               VideoInfo (quality choices), tray icon,
+                               BrowserBridge + BraveExtension (the extension link)
   browser-extension\           the Brave extension (Manifest V3)
     host\                      tells Brave where Grappler.exe is
-  bin\                         yt-dlp, ffmpeg, ffprobe, deno (downloaded)
-    yt-dlp-plugins\            local patches to yt-dlp
+  bin\                         yt-dlp, ffmpeg, ffprobe, deno (downloaded by Setup.bat)
+    yt-dlp-plugins\            local patches to the engine
   config\
-    settings.ps1               download folder, shared with Download.bat
-    yt-dlp.conf                quality, naming, retries, embedding
-  scripts\                     setup, extension installer, terminal menu
+    yt-dlp.conf                naming, retries, embedding
+    grappler.conf              your settings (created on first run, not in git)
+  scripts\
+    setup.ps1                  downloads the tools
   downloads\                   your videos (created on first run)
 ```
 
 ## Building from source
 
-`Setup.bat` already builds the app. After changing anything under
-`app\src\`, run `Build.bat`, or:
+`Setup.bat` builds the app. After changing anything under `app\src\`, run
+`Setup.bat` again, or:
 
 ```powershell
 .\app\build.ps1            # build and copy Grappler.exe to the project root
@@ -193,16 +200,11 @@ Grappler\
 ```
 
 It builds with the MSBuild and WPF that come with Windows as part of the .NET
-Framework: no SDK, no NuGet, no network, and it takes a few seconds.
+Framework: no SDK, no NuGet, no network, and it takes a few seconds. Close
+Grappler first, since a running exe can't be replaced.
 
 One catch before you edit: that compiler only understands **C# 5**. No string
 interpolation, no `?.`, no `nameof`. `async`/`await` is fine.
-
-To refresh only yt-dlp, which is the tool that goes out of date:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -SkipFfmpeg -SkipDeno
-```
 
 ## Contributing
 
@@ -214,10 +216,10 @@ row.
 
 Grappler is released under the [MIT License](LICENSE).
 
-It drives tools that are downloaded separately and keep their own licences:
-[yt-dlp](https://github.com/yt-dlp/yt-dlp) (Unlicense),
+It runs on tools that are downloaded separately and keep their own licences:
+[yt-dlp](https://github.com/yt-dlp/yt-dlp) (Unlicense), the download engine;
 [FFmpeg](https://ffmpeg.org/) (GPL builds from
-[yt-dlp/FFmpeg-Builds](https://github.com/yt-dlp/FFmpeg-Builds)) and
+[yt-dlp/FFmpeg-Builds](https://github.com/yt-dlp/FFmpeg-Builds)); and
 [Deno](https://deno.com/) (MIT). None of them are included in this
 repository.
 

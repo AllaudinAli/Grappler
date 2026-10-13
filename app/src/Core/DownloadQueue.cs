@@ -22,13 +22,16 @@ namespace Grappler.Core
     /// </summary>
     public sealed class DownloadQueue
     {
-        private enum JobStatus { Probing, Ready, Running, Finished }
+        // Probing -> AwaitingChoice -> Ready -> Running -> Finished
+        private enum JobStatus { Probing, AwaitingChoice, Ready, Running, Finished }
 
         private sealed class Job
         {
             public DownloadItem Item;
             public string[] ExtraArgs;
             public string CookieFile;   // from the Brave extension, or null
+            public bool Playlist;       // fetch it as a whole playlist or channel
+            public string PlaylistItems;
             public JobStatus Status;
             public Process Process;
             public volatile bool Cancelled;
@@ -57,16 +60,16 @@ namespace Grappler.Core
         }
 
         // ---------- public API ------------------------------------------
-        public void Enqueue(DownloadItem item, string[] extraArgs)
-        {
-            Enqueue(item, extraArgs, null);
-        }
-
-        public void Enqueue(DownloadItem item, string[] extraArgs, string cookieFile)
+        /// <summary>
+        /// Adds a link and fetches its details. Nothing downloads until
+        /// Start is called with the quality the user picked.
+        /// </summary>
+        public void Enqueue(DownloadItem item, bool playlist, string playlistItems, string cookieFile)
         {
             Job job = new Job();
             job.Item = item;
-            job.ExtraArgs = extraArgs;
+            job.Playlist = playlist;
+            job.PlaylistItems = playlistItems;
             job.CookieFile = cookieFile;
             job.Status = JobStatus.Probing;
 
@@ -76,7 +79,7 @@ namespace Grappler.Core
                 _toProbe.Enqueue(job);
             }
 
-            // The row is already on screen saying "Reading video info", so
+            // The row is already on screen saying "Fetching details", so
             // waiting for a probe slot costs the user nothing.
             PumpProbes();
         }
@@ -129,21 +132,49 @@ namespace Grappler.Core
             ProcessTree.Kill(job.Process);
         }
 
-        public void Retry(DownloadItem item)
+        /// <summary>Downloads a fetched row with the chosen quality's arguments.</summary>
+        public void Start(DownloadItem item, string[] args)
         {
             Job job = Find(item);
             if (job == null) { return; }
 
             lock (_gate)
             {
+                if (job.Status != JobStatus.AwaitingChoice) { return; }
+                job.ExtraArgs = args;
+                job.Status = JobStatus.Ready;
+            }
+            item.ReportStage(DownloadState.Queued, "Queued");
+            Pump();
+        }
+
+        public void Retry(DownloadItem item)
+        {
+            Job job = Find(item);
+            if (job == null) { return; }
+
+            bool refetch;
+            lock (_gate)
+            {
                 if (job.Status == JobStatus.Running) { return; }
                 job.Cancelled = false;
                 job.Error = null;
                 job.FinalPath = null;
-                job.Status = JobStatus.Ready;
+
+                // Cancelled before a quality was ever chosen: there is
+                // nothing to re-run yet, so go back to fetching details.
+                refetch = job.ExtraArgs == null;
+                job.Status = refetch ? JobStatus.Probing : JobStatus.Ready;
+                if (refetch) { _toProbe.Enqueue(job); }
             }
 
             item.ReportProgressReset();
+            if (refetch)
+            {
+                item.ReportStage(DownloadState.Probing, "Fetching details");
+                PumpProbes();
+                return;
+            }
             item.ReportStage(DownloadState.Queued, "Queued");
             Pump();
         }
@@ -194,8 +225,8 @@ namespace Grappler.Core
                 if (job.Cancelled || job.Status != JobStatus.Probing) { return; }
             }
 
-            ProbeResult probe = null;
-            try { probe = YtDlp.Probe(item.Url, _settings, job.CookieFile); }
+            VideoInfo probe = null;
+            try { probe = YtDlp.Probe(item.Url, _settings, job.CookieFile, job.Playlist, job.PlaylistItems); }
             catch { }
 
             if (job.Cancelled) { return; }
@@ -220,17 +251,18 @@ namespace Grappler.Core
             else
             {
                 // Probing fails on plenty of sites that download perfectly
-                // well, so this is not fatal - just carry on with the URL as
-                // the title.
-                item.ReportInfo(item.Url, "Could not read details - trying anyway");
+                // well, so this is not fatal - offer the standard choices
+                // and let the download be tried anyway.
+                probe = VideoInfo.Fallback(_settings, job.Playlist, job.PlaylistItems);
+                item.ReportInfo(item.Url, "Couldn't read the details - pick a quality to try anyway");
             }
 
             lock (_gate)
             {
                 if (job.Status != JobStatus.Probing) { return; }
-                job.Status = JobStatus.Ready;
+                job.Status = JobStatus.AwaitingChoice;
             }
-            item.ReportStage(DownloadState.Queued, "Queued");
+            item.ReportReady(probe.Choices, probe.DefaultChoice);
             Pump();
         }
 
@@ -338,7 +370,7 @@ namespace Grappler.Core
                 item.Log = log.ToString();
                 item.ReportFailed(job.Error != null
                     ? job.Error
-                    : "yt-dlp stopped with exit code " + exit.ToString(CultureInfo.InvariantCulture));
+                    : "The download stopped unexpectedly (exit code " + exit.ToString(CultureInfo.InvariantCulture) + ")");
             }
 
             Pump();

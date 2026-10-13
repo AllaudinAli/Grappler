@@ -46,10 +46,10 @@ if ($Clean) {
     Write-Host '  cleaned' -ForegroundColor DarkGray
 }
 
-if (-not (Test-Path $Icon)) {
-    Write-Host '  drawing app icon...' -ForegroundColor DarkGray
-    & (Join-Path $PSScriptRoot 'make-icon.ps1') | Out-Null
-}
+# Icons are made from app\assets on every build, so a new logo shows up
+# everywhere at once - the app and the browser extension alike.
+Write-Host '  making icons...' -ForegroundColor DarkGray
+& (Join-Path $PSScriptRoot 'make-icon.ps1') -PngDir (Join-Path $Root 'browser-extension\icons') | Out-Null
 
 Write-Host ''
 Write-Host ('  Building {0}...' -f $Configuration) -ForegroundColor Cyan

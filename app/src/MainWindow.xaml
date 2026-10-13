@@ -75,6 +75,28 @@
                            Text="{Binding StatusText}" VerticalAlignment="Center" />
               </Grid>
 
+              <!-- ready: details are in, pick a quality -->
+              <Grid x:Name="ReadyRow" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" MaxWidth="360" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ComboBox Grid.Column="0" Style="{StaticResource Select}" Height="32"
+                          ItemsSource="{Binding Choices}"
+                          SelectedItem="{Binding SelectedChoice, Mode=TwoWay}"
+                          ToolTip="Qualities this video actually offers" />
+                <Button Grid.Column="1" Style="{StaticResource PrimaryButton}" Height="32"
+                        Padding="14,0" Margin="8,0,0,0" Click="OnDownloadClick">
+                  <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource IconDownload}" Style="{StaticResource Icon}"
+                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          Width="14" Height="14" VerticalAlignment="Center" />
+                    <TextBlock Text="Download" Margin="7,0,0,0" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </Grid>
+
               <!-- done -->
               <StackPanel x:Name="DoneRow" Orientation="Horizontal" Visibility="Collapsed">
                 <Path Data="{StaticResource IconCheck}" Style="{StaticResource Icon}"
@@ -109,6 +131,14 @@
             <StackPanel x:Name="ActiveActions" Orientation="Horizontal">
               <Button Style="{StaticResource IconButton}" ToolTip="Cancel"
                       Click="OnCancelClick">
+                <Path Data="{StaticResource IconClose}" Style="{StaticResource Icon}"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+              </Button>
+            </StackPanel>
+
+            <StackPanel x:Name="ReadyActions" Orientation="Horizontal" Visibility="Collapsed">
+              <Button Style="{StaticResource IconButton}" ToolTip="Remove from the list"
+                      Click="OnRemoveClick">
                 <Path Data="{StaticResource IconClose}" Style="{StaticResource Icon}"
                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
               </Button>
@@ -152,6 +182,12 @@
         <DataTrigger Binding="{Binding State}" Value="Queued">
           <Setter TargetName="Bar" Property="Visibility" Value="Collapsed" />
           <Setter TargetName="BarColumn" Property="Width" Value="0" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding State}" Value="Ready">
+          <Setter TargetName="ActiveRow"     Property="Visibility" Value="Collapsed" />
+          <Setter TargetName="ReadyRow"      Property="Visibility" Value="Visible" />
+          <Setter TargetName="ActiveActions" Property="Visibility" Value="Collapsed" />
+          <Setter TargetName="ReadyActions"  Property="Visibility" Value="Visible" />
         </DataTrigger>
         <DataTrigger Binding="{Binding State}" Value="Done">
           <Setter TargetName="ActiveRow"     Property="Visibility" Value="Collapsed" />
@@ -207,13 +243,13 @@
                    KeyDown="OnUrlBoxKeyDown"
                    TextChanged="OnUrlBoxTextChanged" />
 
-          <ComboBox x:Name="QualityBox" Grid.Column="1" Style="{StaticResource Select}"
-                    Width="196" Margin="10,0,0,0" />
+          <!-- Fetch first, choose a quality after: the choices come from
+               what the video really offers. -->
+          <Button x:Name="AddButton" Grid.Column="1" Style="{StaticResource PrimaryButton}"
+                  Content="Fetch" Margin="10,0,0,0" Click="OnAddClick"
+                  ToolTip="Read the video's details and available qualities" />
 
-          <Button x:Name="AddButton" Grid.Column="2" Style="{StaticResource PrimaryButton}"
-                  Content="Add" Margin="10,0,0,0" Click="OnAddClick" />
-
-          <Button x:Name="SettingsButton" Grid.Column="3" Style="{StaticResource IconButton}"
+          <Button x:Name="SettingsButton" Grid.Column="2" Style="{StaticResource IconButton}"
                   Width="34" Height="34" Margin="8,0,0,0" ToolTip="Settings"
                   Click="OnSettingsClick">
             <Path Data="{StaticResource IconSettings}" Style="{StaticResource Icon}"
@@ -256,6 +292,10 @@
         </Border>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+          <Button x:Name="DownloadAllButton" Style="{StaticResource PrimaryButton}"
+                  Height="30" Padding="14,0" Margin="0,0,12,0" Visibility="Collapsed"
+                  Click="OnDownloadAllClick"
+                  ToolTip="Download every fetched video at the quality chosen on its row" />
           <TextBox x:Name="SearchBox" Style="{StaticResource Input}"
                    Width="200" Height="30" Tag="Filter by title or link"
                    TextChanged="OnSearchChanged" KeyDown="OnSearchKeyDown" />
@@ -322,7 +362,7 @@
                    Text="Nothing in the queue" />
         <TextBlock x:Name="EmptyHint" Style="{StaticResource CaptionText}"
                    Margin="0,5,0,0" HorizontalAlignment="Center"
-                   Text="Paste a link above, or drop one onto this window" />
+                   Text="Paste a link above and press Fetch, or drop one onto this window" />
       </StackPanel>
     </Grid>
 

@@ -53,6 +53,11 @@ namespace Grappler
                 }
             }
 
+            QualityBox.ItemsSource = AppSettings.PreferredQualities;
+            QualityBox.SelectedIndex = settings.DefaultQuality;
+
+            ShowBraveState();
+
             CloseBox.ItemsSource = CloseLabels;
             CloseBox.SelectedIndex = Math.Max(0, Array.IndexOf(CloseValues, settings.CloseAction));
         }
@@ -92,13 +97,21 @@ namespace Grappler
             {
                 int exit;
                 string[] lines = YtDlp.Capture(new string[] { "-U" }, 120000, out exit);
+                string output = string.Join("\n", lines);
 
-                // yt-dlp says something like "yt-dlp is up to date" or
-                // "Updated yt-dlp to ..." on the last non-empty line.
-                string message = "Done";
-                for (int i = lines.Length - 1; i >= 0; i--)
+                // The engine's own wording names the engine; say it plainly.
+                string message;
+                if (exit != 0)
                 {
-                    if (lines[i].Trim().Length > 0) { message = lines[i].Trim(); break; }
+                    message = "Couldn't update - check your connection and try again.";
+                }
+                else if (output.IndexOf("up to date", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    message = "Already up to date (" + YtDlp.Version().Replace("Engine ", "version ") + ")";
+                }
+                else
+                {
+                    message = "Updated to " + YtDlp.Version().Replace("Engine ", "version ");
                 }
 
                 Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(delegate
@@ -107,6 +120,39 @@ namespace Grappler
                     UpdateButton.IsEnabled = true;
                 }));
             });
+        }
+
+        // ---------- Brave extension ---------------------------------------
+        private void ShowBraveState()
+        {
+            bool connected = BraveExtension.IsConnected;
+            BraveButton.Content = connected ? "Disconnect" : "Connect";
+            BraveStatus.Text = connected ? "Connected" : "Not connected";
+        }
+
+        private void OnBraveClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (BraveExtension.IsConnected)
+                {
+                    BraveExtension.Disconnect();
+                    BraveHint.Text = "Disconnected. You can also remove the extension in brave://extensions.";
+                }
+                else
+                {
+                    BraveExtension.Connect();
+                    try { Clipboard.SetText(Paths.ExtensionDir); } catch { }
+                    BraveHint.Text =
+                        "Connected. If the extension isn't in Brave yet: open brave://extensions, turn on Developer mode, " +
+                        "click Load unpacked and choose this folder (its path is on your clipboard):\n" + Paths.ExtensionDir;
+                }
+            }
+            catch (Exception ex)
+            {
+                BraveHint.Text = "Couldn't change the connection: " + ex.Message;
+            }
+            ShowBraveState();
         }
 
         private void OnOpenConfigClick(object sender, RoutedEventArgs e)
@@ -154,6 +200,7 @@ namespace Grappler
                 ? "" : Browsers[CookieBox.SelectedIndex];
             _settings.EnsureFolders();
             _settings.CloseAction = CloseValues[Math.Max(0, CloseBox.SelectedIndex)];
+            _settings.DefaultQuality = Math.Max(0, QualityBox.SelectedIndex);
             _settings.Save();
 
             DialogResult = true;

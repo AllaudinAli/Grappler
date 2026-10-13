@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -83,9 +84,6 @@ namespace Grappler
 
         private void BuildDropdowns()
         {
-            QualityBox.ItemsSource = QualityPreset.All;
-            QualityBox.SelectedIndex = _settings.DefaultQuality;
-
             SortBox.ItemsSource = new string[]
             {
                 "Newest first", "Oldest first", "Title A-Z", "Status", "Progress"
@@ -121,15 +119,16 @@ namespace Grappler
                 AddButton.IsEnabled = false;
                 UrlBox.IsEnabled = false;
                 MessageBox.Show(
-                    "yt-dlp.exe is missing from bin\\.\n\nRun Setup.bat in the Grappler folder - it downloads everything Grappler needs.",
+                    "Grappler's download engine is missing.\n\nRun Setup.bat in the Grappler folder - it downloads everything Grappler needs.",
                     "Grappler", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             UrlBox.Focus();
 
-            // Deferred so the window paints first: probing yt-dlp costs a
-            // process launch and nothing in the first frame depends on it.
+            // Deferred so the window paints first: asking the engine for its
+            // version costs a process launch and nothing in the first frame
+            // depends on it.
             Task.Factory.StartNew(delegate
             {
                 string version = YtDlp.Version();
@@ -186,101 +185,99 @@ namespace Grappler
 
         private bool AddUrls(List<string> urls)
         {
-            return AddUrls(urls, SelectedPreset(), PlaylistCheck.IsChecked == true, null);
-        }
-
-        private QualityPreset SelectedPreset()
-        {
-            QualityPreset preset = QualityBox.SelectedItem as QualityPreset;
-            return preset ?? QualityPreset.All[0];
+            bool playlist = PlaylistCheck.IsChecked == true;
+            string range = playlist && PlaylistItemsBox.Text != null ? PlaylistItemsBox.Text.Trim() : "";
+            AddUrls(urls, playlist, range, null);
+            return true;
         }
 
         /// <summary>
-        /// A link from the Brave extension. Same path as a paste, except the
-        /// quality may come from the extension and the playlist box is
-        /// ignored - the button means "this page", not "this channel".
-        /// Returns null on success or a message for the extension to show.
+        /// Adds rows and starts fetching their details. Nothing downloads
+        /// yet: once the details are in, each row offers the qualities its
+        /// video really has, and waits for Download.
         /// </summary>
-        private string AddFromBrowser(BrowserRequest request)
+        private List<DownloadItem> AddUrls(List<string> urls, bool playlist, string range, string cookieFile)
         {
-            if (!Paths.IsInstalled) { return "yt-dlp.exe is missing from Grappler's bin folder."; }
-
-            QualityPreset preset = request.Quality >= 0 && request.Quality < QualityPreset.All.Length
-                ? QualityPreset.All[request.Quality]
-                : SelectedPreset();
-
-            // The format list is a dialog, so it needs to be seen.
-            if (preset.PicksFormat)
-            {
-                if (WindowState == WindowState.Minimized) { WindowState = WindowState.Normal; }
-                Activate();
-            }
-
-            string cookieFile = BrowserBridge.SaveCookies(_settings, request.Cookies);
-            List<string> urls = new List<string>();
-            urls.Add(request.Url);
-
-            if (!AddUrls(urls, preset, false, cookieFile))
-            {
-                BrowserBridge.DeleteCookies(cookieFile);
-                return "Cancelled in Grappler.";
-            }
-            return null;
-        }
-
-        private bool AddUrls(List<string> urls, QualityPreset preset, bool playlist, string cookieFile)
-        {
-            string[] args;
-
-            if (preset.PicksFormat)
-            {
-                // The format list is per-video, so this one cannot be
-                // applied to a batch the way the presets can.
-                if (urls.Count != 1)
-                {
-                    MessageBox.Show(
-                        "Choosing a format works on one link at a time - the available formats differ per video.",
-                        "Grappler", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return false;
-                }
-
-                FormatWindow picker = new FormatWindow(urls[0], _settings);
-                picker.Owner = this;
-                if (picker.ShowDialog() != true) { return false; }
-
-                args = new string[] { "-f", picker.ChosenFormat, "--no-playlist" };
-            }
-            else if (playlist)
-            {
-                List<string> playlistArgs =
-                    new List<string>(QualityPreset.PlaylistArgs(_settings.ArchiveFile));
-
-                // Passed through to yt-dlp untouched - it already
-                // understands "1-10", "3,7,12" and "5:" and reports a bad
-                // range better than a guess here would.
-                string range = PlaylistItemsBox.Text == null
-                    ? "" : PlaylistItemsBox.Text.Trim();
-                if (range.Length > 0)
-                {
-                    playlistArgs.Add("--playlist-items");
-                    playlistArgs.Add(range);
-                }
-                args = playlistArgs.ToArray();
-            }
-            else
-            {
-                args = preset.Args;
-            }
-
+            List<DownloadItem> added = new List<DownloadItem>();
             foreach (string url in urls)
             {
                 DownloadItem item = new DownloadItem(url);
                 Items.Add(item);
-                _queue.Enqueue(item, args, cookieFile);
+                _queue.Enqueue(item, playlist, range, cookieFile);
+                added.Add(item);
             }
-
             UpdateStatus();
+            return added;
+        }
+
+        /// <summary>
+        /// A link from the Brave extension: fetched just like a paste, with
+        /// the page's cookies when the extension sent them. The playlist box
+        /// is ignored - the button means "this page", not "this channel".
+        /// </summary>
+        private string FetchFromBrowser(BrowserRequest request, out int id)
+        {
+            id = -1;
+            if (!Paths.IsInstalled) { return "Grappler's download engine is missing. Run Setup.bat in the Grappler folder."; }
+
+            string cookieFile = BrowserBridge.SaveCookies(_settings, request.Cookies);
+            List<string> urls = new List<string>();
+            urls.Add(request.Url);
+            id = AddUrls(urls, false, null, cookieFile)[0].Id;
+            return null;
+        }
+
+        // ================= starting ====================================
+        private void OnDownloadClick(object sender, RoutedEventArgs e)
+        {
+            DownloadItem item = ItemOf(sender);
+            if (item != null) { StartItem(item, item.SelectedChoice); }
+        }
+
+        private void OnRemoveClick(object sender, RoutedEventArgs e)
+        {
+            DownloadItem item = ItemOf(sender);
+            if (item != null) { RemoveItem(item); }
+        }
+
+        /// <summary>
+        /// Every fetched row, at the quality picked on it. Rows set to "More
+        /// formats" need a decision each, so they are left for that.
+        /// </summary>
+        private void OnDownloadAllClick(object sender, RoutedEventArgs e)
+        {
+            foreach (DownloadItem item in new List<DownloadItem>(Items))
+            {
+                if (item.IsReady && item.SelectedChoice != null && !item.SelectedChoice.OpensPicker)
+                {
+                    StartItem(item, item.SelectedChoice);
+                }
+            }
+        }
+
+        /// <summary>False if nothing started - the format list was closed.</summary>
+        private bool StartItem(DownloadItem item, FormatChoice choice)
+        {
+            if (!item.IsReady || choice == null) { return false; }
+
+            string[] args = choice.Args;
+            if (choice.OpensPicker)
+            {
+                ShowFromTray();   // the list is a dialog; it needs to be seen
+                FormatWindow picker = new FormatWindow(item.Url, _settings);
+                picker.Owner = this;
+                if (picker.ShowDialog() != true) { return false; }
+                args = new string[] { "-f", picker.ChosenFormat, "--no-playlist" };
+            }
+            _queue.Start(item, args);
             return true;
+        }
+
+        private void RemoveItem(DownloadItem item)
+        {
+            _queue.Forget(item);
+            Items.Remove(item);
+            UpdateStatus();
         }
 
         /// <summary>
@@ -442,7 +439,7 @@ namespace Grappler
             for (int i = Items.Count - 1; i >= 0; i--)
             {
                 DownloadItem item = Items[i];
-                if (item.IsActive) { continue; }
+                if (!item.IsFinished) { continue; }
 
                 _queue.Forget(item);
                 Items.RemoveAt(i);
@@ -501,7 +498,7 @@ namespace Grappler
             switch (_filter)
             {
                 case "active":
-                    if (!item.IsActive) { return false; }
+                    if (!item.IsActive && !item.IsReady) { return false; }
                     break;
                 case "done":
                     if (item.State != DownloadState.Done) { return false; }
@@ -539,7 +536,7 @@ namespace Grappler
 
         private void UpdateStatus()
         {
-            int running = 0, queued = 0, done = 0, failed = 0, active = 0;
+            int running = 0, queued = 0, done = 0, failed = 0, active = 0, ready = 0;
 
             for (int i = 0; i < Items.Count; i++)
             {
@@ -553,6 +550,9 @@ namespace Grappler
                     case DownloadState.Queued:
                         queued++; active++;
                         break;
+                    case DownloadState.Ready:
+                        ready++;
+                        break;
                     case DownloadState.Done:
                         done++;
                         break;
@@ -563,13 +563,16 @@ namespace Grappler
             }
 
             SetCount(SegAll, Items.Count, ref _lastAll);
-            SetCount(SegActive, active, ref _lastActive);
+            SetCount(SegActive, active + ready, ref _lastActive);
+
+            DownloadAllButton.Visibility = ready > 1 ? Visibility.Visible : Visibility.Collapsed;
+            DownloadAllButton.Content = "Download all " + ready.ToString(CultureInfo.InvariantCulture);
             SetCount(SegDone, done, ref _lastDone);
             SetCount(SegFailed, failed, ref _lastFailed);
 
             string line = string.Format(
-                "{0} running   ·   {1} queued   ·   {2} done   ·   {3} failed",
-                running, queued, done, failed);
+                "{0} ready   ·   {1} running   ·   {2} queued   ·   {3} done   ·   {4} failed",
+                ready, running, queued, done, failed);
             if (line != _lastStatusLine)
             {
                 QueueStatus.Text = line;
@@ -708,7 +711,6 @@ namespace Grappler
             _flushTimer.Stop();
             _queue.CancelAll();
             BrowserBridge.DeleteAllCookies(_settings);
-            _settings.DefaultQuality = QualityBox.SelectedIndex < 0 ? 0 : QualityBox.SelectedIndex;
             _settings.Save();
             _tray.Dispose();
         }
@@ -790,8 +792,14 @@ namespace Grappler
         {
             switch (BrowserBridge.Str(message, "type"))
             {
-                case "grab":
-                    return BrowserBridge.Result(AddFromBrowser(BrowserRequest.FromMessage(message)));
+                case "fetch":
+                {
+                    int id;
+                    string error = FetchFromBrowser(BrowserRequest.FromMessage(message), out id);
+                    Dictionary<string, object> reply = BrowserBridge.Result(error);
+                    if (error == null) { reply["id"] = id; }
+                    return reply;
+                }
                 case "show":
                     ShowFromTray();
                     return BrowserBridge.Result(null);
@@ -799,7 +807,8 @@ namespace Grappler
                     return BuildStatus();
                 case "action":
                     return BrowserBridge.Result(DoBrowserAction(
-                        BrowserBridge.Str(message, "action"), BrowserBridge.Int(message, "id", -1)));
+                        BrowserBridge.Str(message, "action"), BrowserBridge.Int(message, "id", -1),
+                        BrowserBridge.Int(message, "choice", -1)));
                 default:
                     return BrowserBridge.Result("Unknown request.");
             }
@@ -825,6 +834,20 @@ namespace Grappler
                 row["size"] = item.SizeText;
                 row["error"] = item.ErrorText;
                 row["thumb"] = item.ThumbnailUrl;
+                if (item.IsReady && item.Choices != null)
+                {
+                    List<object> choices = new List<object>();
+                    foreach (FormatChoice c in item.Choices)
+                    {
+                        Dictionary<string, object> choice = new Dictionary<string, object>();
+                        choice["label"] = c.Label;
+                        choice["detail"] = c.Detail.Replace("   ·   ", " · ");
+                        choice["picker"] = c.OpensPicker;
+                        choices.Add(choice);
+                    }
+                    row["choices"] = choices;
+                    row["selected"] = item.Choices.IndexOf(item.SelectedChoice);
+                }
                 rows.Add(row);
             }
 
@@ -834,7 +857,7 @@ namespace Grappler
             return reply;
         }
 
-        private string DoBrowserAction(string action, int id)
+        private string DoBrowserAction(string action, int id, int choice)
         {
             if (action == "clear") { ClearFinished(); return null; }
             if (action == "folder" && id < 0) { OpenDownloadFolder(); return null; }
@@ -848,15 +871,26 @@ namespace Grappler
 
             switch (action)
             {
+                case "start":
+                    if (!item.IsReady) { return "That one is already on its way."; }
+                    if (item.Choices == null || choice < 0 || choice >= item.Choices.Count) { return "Pick a quality first."; }
+                    item.SelectedChoice = item.Choices[choice];
+                    if (item.SelectedChoice.OpensPicker)
+                    {
+                        // The format list is a dialog. Opened after this
+                        // reply, so the popup is not left waiting on it.
+                        Dispatcher.BeginInvoke(new Action(delegate { StartItem(item, item.SelectedChoice); }));
+                        return null;
+                    }
+                    StartItem(item, item.SelectedChoice);
+                    break;
                 case "cancel": _queue.Cancel(item); break;
                 case "retry":  _queue.Retry(item); break;
                 case "folder": ShowInFolder(item); break;
                 case "play":   Play(item); break;
                 case "remove":
                     if (item.IsActive) { return "Cancel it first."; }
-                    _queue.Forget(item);
-                    Items.Remove(item);
-                    UpdateStatus();
+                    RemoveItem(item);
                     break;
                 default: return "Unknown action.";
             }

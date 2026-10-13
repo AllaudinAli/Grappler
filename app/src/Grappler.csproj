@@ -118,6 +118,8 @@
     <Compile Include="Core\DownloadQueue.cs" />
     <Compile Include="Core\BrowserBridge.cs" />
     <Compile Include="Core\TrayIcon.cs" />
+    <Compile Include="Core\BraveExtension.cs" />
+    <Compile Include="Core\VideoInfo.cs" />
     <Compile Include="Core\SmoothProgress.cs" />
     <None Include="app.manifest" />
   </ItemGroup>

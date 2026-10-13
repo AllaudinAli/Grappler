@@ -37,7 +37,8 @@ namespace Grappler.Core
         public static string Ffmpeg    { get { return Path.Combine(_root, "bin\\ffmpeg.exe"); } }
         public static string Deno      { get { return Path.Combine(_root, "bin\\deno.exe"); } }
         public static string ConfFile  { get { return Path.Combine(_root, "config\\yt-dlp.conf"); } }
-        public static string SettingsPs1 { get { return Path.Combine(_root, "config\\settings.ps1"); } }
+        public static string ExtensionDir { get { return Path.Combine(_root, "browser-extension"); } }
+        public static string HostManifest { get { return Path.Combine(_root, "browser-extension\\host\\com.grappler.host.json"); } }
         public static string AppConf   { get { return Path.Combine(_root, "config\\grappler.conf"); } }
 
         public static bool IsInstalled

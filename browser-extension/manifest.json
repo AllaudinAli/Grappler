@@ -9,7 +9,7 @@
   "host_permissions": ["<all_urls>"],
   "background": { "service_worker": "background.js" },
   "action": {
-    "default_title": "Grab with Grappler",
+    "default_title": "Fetch with Grappler",
     "default_popup": "popup.html",
     "default_icon": { "16": "icons/icon-16.png", "32": "icons/icon-32.png" }
   },
@@ -22,7 +22,7 @@
   "commands": {
     "grab-current-tab": {
       "suggested_key": { "default": "Alt+Shift+G" },
-      "description": "Grab the current tab"
+      "description": "Fetch the current tab"
     }
   }
 }

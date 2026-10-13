@@ -1,23 +1,26 @@
 #Requires -Version 5.1
 <#
-    Downloads (or repairs) the binaries this project needs
-    into bin\ :
-        yt-dlp.exe               the downloader
+    Downloads the tools Grappler runs on into bin\ - run by
+    Setup.bat:
+        yt-dlp.exe               the download engine
         ffmpeg.exe / ffprobe.exe merging and format conversion
         deno.exe                 JavaScript runtime YouTube needs
 
-    Safe to re-run at any time - it just overwrites bin\ with
-    the current official builds. Nothing is installed
-    system-wide and PATH is never touched.
+    Tools already in bin\ are left alone, so running Setup.bat
+    again (say, after a git pull) is quick. -Force downloads
+    them all again, which also repairs a broken copy. The
+    engine keeps itself current from Grappler's Settings.
+
+    Nothing is installed system-wide and PATH is never touched.
 
     Usage:
         powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
-        ... -SkipFfmpeg     leave the existing ffmpeg alone
-        ... -SkipYtDlp      leave the existing yt-dlp alone
-        ... -SkipDeno       leave the existing deno alone
+        ... -Force          download everything again
+        ... -SkipFfmpeg     leave ffmpeg alone (likewise -SkipYtDlp, -SkipDeno)
 #>
 
 param(
+    [switch] $Force,
     [switch] $SkipYtDlp,
     [switch] $SkipFfmpeg,
     [switch] $SkipDeno
@@ -64,9 +67,19 @@ Write-Host ''
 Write-Host '  Grappler - setup' -ForegroundColor Cyan
 Write-Host ('  ' + ('-' * 46)) -ForegroundColor DarkGray
 
+# Already there and not forced: nothing to do.
+function Test-Have { param([string[]] $Names)
+    if ($Force) { return $false }
+    foreach ($n in $Names) { if (-not (Test-Path (Join-Path $BinDir $n))) { return $false } }
+    return $true
+}
+if (Test-Have 'yt-dlp.exe')               { $SkipYtDlp = $true }
+if (Test-Have 'ffmpeg.exe', 'ffprobe.exe') { $SkipFfmpeg = $true }
+if (Test-Have 'deno.exe')                 { $SkipDeno = $true }
+
 # ---- yt-dlp -------------------------------------------------------
 if ($SkipYtDlp) {
-    Write-Host '  Skipping yt-dlp.' -ForegroundColor DarkGray
+    Write-Host '  yt-dlp: already here.' -ForegroundColor DarkGray
 } else {
     Write-Host '  Downloading yt-dlp...' -ForegroundColor White
     Invoke-WebRequest -Uri $YtDlpUrl -OutFile (Join-Path $BinDir 'yt-dlp.exe')
@@ -75,7 +88,7 @@ if ($SkipYtDlp) {
 
 # ---- ffmpeg -------------------------------------------------------
 if ($SkipFfmpeg) {
-    Write-Host '  Skipping ffmpeg.' -ForegroundColor DarkGray
+    Write-Host '  ffmpeg: already here.' -ForegroundColor DarkGray
 } else {
     Write-Host '  Downloading ffmpeg (~160 MB, this is the slow part)...' -ForegroundColor White
     $zipPath = Join-Path $env:TEMP ('ffmpeg-' + [guid]::NewGuid().ToString('N') + '.zip')
@@ -92,7 +105,7 @@ if ($SkipFfmpeg) {
 # to be understood. Without a JS runtime yt-dlp still works, but the
 # higher-quality formats silently disappear.
 if ($SkipDeno) {
-    Write-Host '  Skipping deno.' -ForegroundColor DarkGray
+    Write-Host '  deno: already here.' -ForegroundColor DarkGray
 } else {
     Write-Host '  Downloading deno (JavaScript runtime for YouTube)...' -ForegroundColor White
     $zipPath = Join-Path $env:TEMP ('deno-' + [guid]::NewGuid().ToString('N') + '.zip')

@@ -64,6 +64,10 @@ namespace Grappler
             // Closing the window may only hide it to the tray, so the app
             // ends when MainWindow says so, not when no window is showing.
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+            // If the Brave extension was set up and this folder has moved
+            // since, point the browser at the new place.
+            BraveExtension.RefreshIfConnected();
             MainWindow window = new MainWindow();
             if (!startHidden) { window.Show(); }
         }
