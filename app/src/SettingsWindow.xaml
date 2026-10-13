@@ -1,0 +1,80 @@
+<Window x:Class="Grappler.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings"
+        Width="580" SizeToContent="Height"
+        ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource CanvasBrush}"
+        FontFamily="{StaticResource UiFont}"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+
+  <StackPanel Margin="24,22,24,20">
+
+    <!-- download folder -->
+    <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold"
+               Text="Where downloads are saved" />
+    <Grid Margin="0,9,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <TextBox x:Name="FolderBox" Grid.Column="0" Style="{StaticResource Input}" />
+      <Button x:Name="BrowseButton" Grid.Column="1" Style="{StaticResource GhostButton}"
+              Content="Browse" Margin="8,0,0,0" Click="OnBrowseClick" />
+    </Grid>
+    <TextBlock Style="{StaticResource CaptionText}" Margin="0,7,0,0" TextWrapping="Wrap"
+               Text="Shared with Download.bat - changing it here changes it there too. The folder is created if it does not exist." />
+
+    <!-- parallel -->
+    <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,22,0,0"
+               Text="How many downloads at once" />
+    <ComboBox x:Name="ParallelBox" Style="{StaticResource Select}"
+              Width="110" HorizontalAlignment="Left" Margin="0,9,0,0" />
+    <TextBlock Style="{StaticResource CaptionText}" Margin="0,7,0,0" TextWrapping="Wrap"
+               Text="More is not always faster - your connection is shared between them, and some sites throttle you above three or four." />
+
+    <!-- cookies -->
+    <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,22,0,0"
+               Text="Sign-in cookies" />
+    <ComboBox x:Name="CookieBox" Style="{StaticResource Select}"
+              Width="180" HorizontalAlignment="Left" Margin="0,9,0,0" />
+    <TextBlock Style="{StaticResource CaptionText}" Margin="0,7,0,0" TextWrapping="Wrap"
+               Text="Borrows cookies from your browser for age-restricted, private or members-only videos. Close the browser first - Chrome locks its cookie database while running." />
+
+    <!-- closing -->
+    <TextBlock Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,22,0,0"
+               Text="When you close the window" />
+    <ComboBox x:Name="CloseBox" Style="{StaticResource Select}"
+              Width="240" HorizontalAlignment="Left" Margin="0,9,0,0" />
+    <TextBlock Style="{StaticResource CaptionText}" Margin="0,7,0,0" TextWrapping="Wrap"
+               Text="In the tray, Grappler keeps downloading and the Brave extension keeps working. Click the tray icon to bring the window back." />
+
+    <!-- maintenance -->
+    <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="0,22,0,0" />
+    <Grid Margin="0,18,0,0">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+        <Button x:Name="UpdateButton" Style="{StaticResource GhostButton}"
+                Content="Update yt-dlp" Click="OnUpdateClick" />
+        <TextBlock x:Name="UpdateStatus" Style="{StaticResource CaptionText}"
+                   VerticalAlignment="Center" Margin="12,0,0,0" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+      <Button x:Name="OpenConfigButton" Style="{StaticResource GhostButton}"
+              Content="Open config folder" HorizontalAlignment="Right"
+              Click="OnOpenConfigClick" />
+    </Grid>
+    <TextBlock Style="{StaticResource CaptionText}" Margin="0,9,0,0" TextWrapping="Wrap"
+               Text="Sites change how they serve video constantly. An &quot;unable to extract&quot; error is almost always a stale copy of yt-dlp." />
+
+    <!-- footer -->
+    <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="0,20,0,0" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button x:Name="CancelButton" Style="{StaticResource GhostButton}"
+              Content="Cancel" Click="OnCancelClick" />
+      <Button x:Name="SaveButton" Style="{StaticResource PrimaryButton}"
+              Content="Save" Margin="8,0,0,0" Click="OnSaveClick" />
+    </StackPanel>
+  </StackPanel>
+</Window>

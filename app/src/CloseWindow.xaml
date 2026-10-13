@@ -1,0 +1,33 @@
+<Window x:Class="Grappler.CloseWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Close Grappler"
+        Width="440" SizeToContent="Height"
+        ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource CanvasBrush}"
+        FontFamily="{StaticResource UiFont}"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+
+  <StackPanel Margin="24,22,24,20">
+    <TextBlock Style="{StaticResource TitleText}" Text="Keep Grappler running?" />
+    <TextBlock x:Name="Body" Style="{StaticResource BodyText}" Margin="0,10,0,0"
+               TextWrapping="Wrap"
+               Text="In the tray, Grappler keeps downloading and the Brave extension keeps working. Click the tray icon near the clock to bring the window back." />
+
+    <CheckBox x:Name="RememberCheck" Style="{StaticResource Check}" Margin="0,18,0,0"
+              Content="Don't ask again" />
+    <TextBlock Style="{StaticResource CaptionText}" Margin="0,5,0,0" TextWrapping="Wrap"
+               Text="You can change this later in Settings." />
+
+    <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="0,20,0,0" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button x:Name="QuitButton" Style="{StaticResource GhostButton}"
+              Content="Quit" Click="OnQuitClick" />
+      <Button x:Name="TrayButton" Style="{StaticResource PrimaryButton}"
+              Content="Keep in tray" Margin="8,0,0,0" Click="OnTrayClick" IsDefault="True" />
+    </StackPanel>
+  </StackPanel>
+</Window>

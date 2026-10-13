@@ -1,0 +1,26 @@
+# Binaries - ~400 MB, downloaded by Setup.bat. The yt-dlp plugins in
+# bin\yt-dlp-plugins are source code, so those are kept.
+bin/*
+!bin/yt-dlp-plugins/
+__pycache__/
+
+# Downloaded media and download state
+downloads/
+
+# Build output. Grappler.exe is rebuilt from app\src by Build.bat,
+# so the compiled app is not tracked either.
+app/src/bin/
+app/src/obj/
+Grappler.exe
+
+# Generated from the logo (app/assets/grappler.png) by app\make-icon.ps1
+app/src/AppIcon.ico
+browser-extension/icons/
+
+# Written by the Settings dialog
+config/grappler.conf
+
+# yt-dlp leftovers if anything is ever run from the project root
+*.part
+*.ytdl
+*.temp.*

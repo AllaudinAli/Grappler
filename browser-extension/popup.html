@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Grappler</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="topbar">
+    <img class="brand-icon" src="icons/icon-32.png" alt="" width="18" height="18">
+    <span class="brand">Grappler</span>
+    <span id="conn" class="conn" aria-live="polite"></span>
+    <button id="open" class="icon-btn" title="Open Grappler" aria-label="Open Grappler">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5 8 8M6.5 3.5h-3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-3"/></svg>
+    </button>
+  </header>
+
+  <!-- Shown instead of everything else until Brave can reach Grappler. -->
+  <section id="setup" class="setup" hidden>
+    <h2>One step left</h2>
+    <p>Brave can't reach Grappler yet. In the Grappler folder, double-click
+      <b>Install-Brave-Extension.bat</b>, then restart Brave.</p>
+    <p id="setupDetail" class="setup-detail"></p>
+  </section>
+
+  <main id="main">
+    <section class="grab-card">
+      <div class="page">
+        <img id="favicon" class="favicon" alt="" width="16" height="16">
+        <div class="page-text">
+          <div id="title" class="page-title">&nbsp;</div>
+          <div id="site" class="page-site">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <label class="select">
+          <span class="visually-hidden">Quality</span>
+          <!-- Values are positions in QualityPreset.All (app\src\Core\QualityPreset.cs). -->
+          <select id="quality">
+            <option value="-1">App default</option>
+            <option value="0">Best quality</option>
+            <option value="1">1080p</option>
+            <option value="2">720p</option>
+            <option value="3">480p</option>
+            <option value="4">Audio · MP3</option>
+            <option value="5">Audio · original</option>
+            <option value="6">Subtitles only</option>
+            <option value="7">Choose format…</option>
+          </select>
+          <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+        </label>
+        <button id="grab" class="primary" disabled>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg>
+          <span id="grabLabel">Grab</span>
+        </button>
+      </div>
+
+      <label class="toggle" title="Sends Brave's cookies for this site to Grappler, for private, members-only and age-restricted videos and sites with bot checks. They stay on this PC and are deleted when Grappler closes.">
+        <input type="checkbox" id="cookies" role="switch">
+        <span class="track" aria-hidden="true"></span>
+        <span>Use my sign-in for this site</span>
+      </label>
+
+      <p id="notice" class="notice" role="status"></p>
+    </section>
+
+    <section class="downloads">
+      <div class="section-head">
+        <h2>Downloads</h2>
+        <span id="summary" class="summary"></span>
+        <button id="clear" class="text-btn" hidden>Clear finished</button>
+      </div>
+
+      <ul id="list" class="list"></ul>
+
+      <div id="empty" class="empty">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>
+        <p id="emptyTitle" class="empty-title">No downloads yet</p>
+        <p id="emptyHint" class="empty-hint">Open a video and press Grab.</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <button id="folder" class="text-btn">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5a1 1 0 0 1 1-1h3l1.5 1.5H13a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/></svg>
+        Downloads folder
+      </button>
+      <span class="shortcut" title="Grab the current tab from anywhere">Alt+Shift+G</span>
+    </footer>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

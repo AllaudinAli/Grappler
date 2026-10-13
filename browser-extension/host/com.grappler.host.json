@@ -1,0 +1,9 @@
+{
+  "name": "com.grappler.host",
+  "description": "Grappler - hands links from the Brave extension to the app",
+  "path": "..\\..\\Grappler.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://abmjhopniahmmgnbfddahppgglipkbia/"
+  ]
+}

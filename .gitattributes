@@ -1,0 +1,9 @@
+# Normalise line endings in the repository; check out with whatever the
+# platform expects, except where Windows tools are picky.
+* text=auto
+
+# cmd.exe misreads labels and goto in LF-only batch files.
+*.bat text eol=crlf
+
+*.png binary
+*.ico binary

@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Grappler",
+  "version": "1.0.0",
+  "description": "Send the video on this page to Grappler.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1MVU8sno3yegQyOposl68QdO0Gs3KiHDKBZhKhL3/o39GeSMazCwFKqcnAYCsdyPNKP7vqHWF22hZFbZAYAeVebOMqFqCJL5GUUPfaX+h24sFwH8Yv2tbkrr6ZHv1/WJy28IyOT4MOl2/rKiaI6tb7H0oOxLjIsGY7jPbS57C3kMGcf6WflAzlUgs51Ed/SpQXLffe+PHQKflwtfKEFVI8AhOG9tb7k6h5Q+ZHYe1gAGCxvA+PQFLF+SPA1Z4DYXq0cZugjQMYeq+yPdoaVUOlDddo64kb5f259tjl7/8hpoSIdzpdahKOtjjOAbReuzjNqwBx/C3DlF0lQfz+NsLQIDAQAB",
+  "minimum_chrome_version": "110",
+  "permissions": ["nativeMessaging", "contextMenus", "cookies", "storage", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "Grab with Grappler",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/icon-16.png", "32": "icons/icon-32.png" }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "commands": {
+    "grab-current-tab": {
+      "suggested_key": { "default": "Alt+Shift+G" },
+      "description": "Grab the current tab"
+    }
+  }
+}
